@@ -73,7 +73,7 @@ This topic is called `time_registration_topic`
 
 3. **Topic 3**
 This topic is used to store the position of the driver. The key is the `truck_id` and the value is the position of the driver.
-This topic is called `poisition_topic`
+This topic is called `position_topic`
 
 ## Agregation
 
