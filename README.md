@@ -79,6 +79,10 @@ This topic is called `poisition_topic`
 
 The aggregation is done by the `driver_id` between the first topic and the second. The aggregation is done by the `truck_id` for the second and the third topic.
 
+## Agregation
+
+The aggregation is done by the driver_id between the first topic and the second. The aggregation is done by the truck_id for the second and the third topic.
+
 ## Topic result
 
 The result of the merge will be a json flat topic of our three producer topics.
