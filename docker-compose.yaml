@@ -12,11 +12,59 @@ services:
       - zookeeper
     ports:
       - "9092:9092"
+    volumes:
+      - kafka_volume:/bitnami
     environment:
       - KAFKA_BROKER_ID=1
       - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
       - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
       - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
       - ALLOW_PLAINTEXT_LISTENER=yes
+
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      - kafka
+
+  minio:
+    image: 'minio/minio:latest'
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    environment:
+      - MINIO_ROOT_USER=minio
+      - MINIO_ROOT_PASSWORD=password
+    volumes:
+      - 'minio:/data/minio'
+    command: 'minio server /data/minio --console-address ":9001"'
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - '-f'
+        - 'http://localhost:9000/minio/health/live'
+      retries: 3
+      timeout: 5s
+    depends_on:
+      - kafka
+  redis:
+    image: bitnami/redis:latest
+    environment:
+      - REDIS_REPLICATION_MODE=master
+      - REDIS_PASSWORD=password
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_volume:/var/lib/redis/data
+
+volumes:
+  kafka_volume:
+  minio:
+  redis_volume:
 
   
