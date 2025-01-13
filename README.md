@@ -9,6 +9,34 @@
 
 ![System Architecture](image.png)
 
-## Topic description
+### Topics
+1. Driver
+```json
+{
+    "driver_id": "string",
+    "first_name": "string",
+    "last_name": "string",
+    "email": "string",
+    "phone": "string"
+}
+```
 
+2. Workday
+```json
+{
+    "type": "string",
+    "timestamp": "string"
+}
+```
+
+3. Position
+```json
+{
+    "latitude": "number",
+    "longitude": "number",
+    "timestamp": "string"
+}
+```
+
+## Topic description
 
