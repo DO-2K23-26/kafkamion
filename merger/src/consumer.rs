@@ -23,11 +23,11 @@ pub fn consumer(client_config: ClientConfig) {
                 if let Some(payload) = message.detach().payload() {
                     // Deserialize the payload assuming it's UTF-8 encoded
                     //It will be different depending on the data format
-                    let person: Person =
-                        serde_json::from_slice(payload).expect("Unable to deserialize data");
 
                     // Log the deserialized person object
-                    info!("{:#?}", person);
+
+
+                    println!("Received message: {:?}", payload);
                 }
             }
             Some(Err(err)) => {
