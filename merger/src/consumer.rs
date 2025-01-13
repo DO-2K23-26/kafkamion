@@ -11,7 +11,7 @@ pub fn consumer(client_config: ClientConfig) {
     // Create a new Kafka consumer using the provided client configuration
     let consumer: BaseConsumer = client_config.create().expect("Consumer creation failed");
 
-    // Subscribe to the "time_registration_topic" Kafka topic
+    // Subscribe to the "entity_topic" Kafka topic
     consumer
         .subscribe(&[&CONFIG.topic])
         .expect("Subscription to topic failed");
@@ -20,7 +20,6 @@ pub fn consumer(client_config: ClientConfig) {
     loop {
         match consumer.poll(Duration::from_millis(10000)) {
             Some(Ok(message)) => {
-                // If a message is received successfully, extract and process its payload
                 if let Some(payload) = message.detach().payload() {
                     // Deserialize the payload assuming it's UTF-8 encoded
                     //It will be different depending on the data format
@@ -32,12 +31,9 @@ pub fn consumer(client_config: ClientConfig) {
                 }
             }
             Some(Err(err)) => {
-                // If an error occurs during message consumption, print the error
-                eprintln!("Error: {:?}", err);
+                println!("Error: {:?}", err);
             }
-             // Do a print statement here
             None => {
-                // If no message is received, print a debug message
                 println!("No message received");
             }
         }
