@@ -1,4 +1,4 @@
-# Kakfamion
+# Kafkamion
 
 ## Table of content
 
@@ -10,7 +10,9 @@
 ![System Architecture](image.png)
 
 ### Topics
+
 1. Driver
+
 ```json
 {
     "driver_id": "string",
@@ -22,6 +24,7 @@
 ```
 
 2. Time Registration `time_registration`
+
 ```json
 {
     "type": "string",
@@ -30,6 +33,7 @@
 ```
 
 3. Position
+
 ```json
 {
     "latitude": "number",
@@ -40,3 +44,6 @@
 
 ## Topic description
 
+Each Topic is defined as follow :
+
+1. Topic 1
