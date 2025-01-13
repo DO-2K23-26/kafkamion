@@ -15,7 +15,6 @@
 ## Topics
 
 1. Entity registration
-The type can be `driver` or `truck` and will be handled differently. The key is the `driver_id` or the `truck_id` and the value is the information of the driver or the truck.
 
 ```json
 {
@@ -46,8 +45,6 @@ or
     "timestamp": "string",
     "driver_id": "string",
     "truck_id": "string"
-
-
 }
 ```
 
@@ -67,17 +64,17 @@ or
 Each Topic is defined as follow :
 
 1. **Topic 1**
-This topic is used to store the driver information. The key is the driver_id and the values are the driver information.
+The type can be `driver` or `truck` and will be handled differently. The key is the `driver_id` or the `truck_id` and the value is the information of the driver or the truck.
 
 2. **Topic 2**
 This topic is used to store the time registration of the driver. The key is the type of the time registration and the value is the timestamp.
 
 3. **Topic 3**
-This topic is used to store the position of the driver. The key is the truck_id and the value is the position of the driver.
+This topic is used to store the position of the driver. The key is the `truck_id` and the value is the position of the driver.
 
 ## Agregation
 
-The aggregation is done by the driver_id between the first topic and the second. The aggregation is done by the truck_id for the second and the third topic.
+The aggregation is done by the `driver_id` between the first topic and the second. The aggregation is done by the `truck_id` for the second and the third topic.
 
 ## Topic result
 
