@@ -18,7 +18,7 @@ pub fn consumer(client_config: ClientConfig) {
 
     // Start an infinite loop for polling messages from Kafka
     loop {
-        match consumer.poll(Duration::from_millis(10000)) {
+        match consumer.poll(Duration::from_millis(100)) {
             Some(Ok(message)) => {
                 if let Some(payload) = message.detach().payload() {
                     // Deserialize the payload assuming it's UTF-8 encoded
@@ -34,7 +34,7 @@ pub fn consumer(client_config: ClientConfig) {
                 println!("Error: {:?}", err);
             }
             None => {
-                println!("No message received");
+                // println!("No message received");
             }
         }
     }
