@@ -8,14 +8,6 @@ services:
     volumes:
       - kafka_data:/var/lib/kafka/data
 
-
-# CREATE A TOPIC
-# docker exec -it first-course-kafka-1 /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --topic first-course
-
-# CONNECT TO THE CONTAINER & SEND MESSAGES
-# docker exec --workdir /opt/kafka/bin/ -it first-course-kafka-1 sh
-# ./kafka-console-producer.sh --bootstrap-server localhost:9092 --topic first-course
-
   grafana:
     image: grafana/grafana:latest
     ports:
