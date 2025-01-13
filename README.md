@@ -5,6 +5,7 @@
 1. [Architecture](#architecture)
 2. [Topics](#topics)
 3. [Topic description](#topic-description)
+4. [Topic result](#topic-result)
 
 ## Architecture
 
@@ -55,3 +56,28 @@ This topic is used to store the time registration of the driver. The key is the 
 
 3. **Topic 3**
 This topic is used to store the position of the driver. The key is the truck_id and the value is the position of the driver.
+
+## Topic result
+The result of the merge will be a json flat topic of our three producer topics.
+
+```json
+{
+    "driver_id": "string",
+    "first_name": "string",
+    "last_name": "string",
+    "email": "string",
+    "phone": "string",
+    "start_time": "string",
+    "end_time": "string",
+    "rest_time": "string",
+    "latitude_start": "number",
+    "longitude_start": "number",
+    "timestamp_start": "string",
+    "latitude_end": "number",
+    "longitude_end": "number",
+    "timestamp_end": "string",
+    "latitude_rest": "number",
+    "longitude_rest": "number",
+    "timestamp_rest": "string"
+}
+```
