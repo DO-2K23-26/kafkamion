@@ -11,30 +11,34 @@ pub fn consumer(client_config: ClientConfig) {
     // Create a new Kafka consumer using the provided client configuration
     let consumer: BaseConsumer = client_config.create().expect("Consumer creation failed");
 
-    // Subscribe to the "entity_topic" Kafka topic
+    // Subscribe to the "time_registration_topic" Kafka topic
     consumer
         .subscribe(&[&CONFIG.topic])
         .expect("Subscription to topic failed");
 
     // Start an infinite loop for polling messages from Kafka
     loop {
-        match consumer.poll(Duration::from_millis(100)) {
+        match consumer.poll(Duration::from_millis(10000)) {
             Some(Ok(message)) => {
+                // If a message is received successfully, extract and process its payload
                 if let Some(payload) = message.detach().payload() {
                     // Deserialize the payload assuming it's UTF-8 encoded
                     //It will be different depending on the data format
+                    let person: Person =
+                        serde_json::from_slice(payload).expect("Unable to deserialize data");
 
                     // Log the deserialized person object
-
-
-                    println!("Received message: {:?}", payload);
+                    info!("{:#?}", person);
                 }
             }
             Some(Err(err)) => {
-                println!("Error: {:?}", err);
+                // If an error occurs during message consumption, print the error
+                eprintln!("Error: {:?}", err);
             }
+             // Do a print statement here
             None => {
-                // println!("No message received");
+                // If no message is received, print a debug message
+                println!("No message received");
             }
         }
     }
