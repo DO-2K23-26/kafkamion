@@ -20,7 +20,7 @@ The type can be `driver` or `truck` and will be handled differently. The key is 
 ```json
 {
     "type": "string",
-    "truck_id": "string",
+    "driver_id": "string",
     "first_name": "string",
     "last_name": "string",
     "email": "string",
@@ -32,8 +32,9 @@ or
 
 ```json
 {
-     "truck_id": "string",
-     "immatriculation": "string"
+    "type": "string",
+    "truck_id": "string",
+    "immatriculation": "string"
 }
 ```
 
@@ -42,7 +43,11 @@ or
 ```json
 {
     "type": "string",
-    "timestamp": "string"
+    "timestamp": "string",
+    "driver_id": "string",
+    "truck_id": "string"
+
+
 }
 ```
 
@@ -50,6 +55,7 @@ or
 
 ```json
 {
+    "truck_id": "string",
     "latitude": "number",
     "longitude": "number",
     "timestamp": "string"
@@ -84,6 +90,8 @@ The result of the merge will be a json flat topic of our three producer topics.
     "last_name": "string",
     "email": "string",
     "phone": "string",
+    "truck_id": "string",
+    "immatriculation": "string",
     "start_time": "string",
     "end_time": "string",
     "rest_time": "string",
