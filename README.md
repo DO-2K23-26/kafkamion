@@ -67,13 +67,13 @@ Each Topic is defined as follow :
 The type can be `driver` or `truck` and will be handled differently. The key is the `driver_id` or the `truck_id` and the value is the information of the driver or the truck.
 This topic is called `entity_topic`
 
-3. **Topic 2**
+2. **Topic 2**
 This topic is used to store the time registration of the driver. The key is the type of the time registration and the value is the timestamp.
 This topic is called `time_registration_topic`
 
-5. **Topic 3**
+3. **Topic 3**
 This topic is used to store the position of the driver. The key is the `truck_id` and the value is the position of the driver.
-This topic is called `poisition_topic`
+This topic is called `position_topic`
 
 ## Agregation
 
@@ -81,7 +81,8 @@ The aggregation is done by the `driver_id` between the first topic and the secon
 
 ## Topic result
 
-The result of the merge will be a json flat topic of our three producer topics.
+The result of the merge, called `report`, will be a json flat topic of our three producers topics.
+The topic is called `report_topic`
 
 ```json
 {
