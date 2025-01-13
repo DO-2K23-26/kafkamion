@@ -21,7 +21,7 @@
 }
 ```
 
-2. Workday
+2. Time Registration `time_registration`
 ```json
 {
     "type": "string",
