@@ -15,7 +15,7 @@
 ## Topics
 
 1. Entity registration
-The type can be 'driver' or 'truck' and will be handled differently. The key is the driver_id or the truck_id and the value is the information of the driver or the truck.
+The type can be `driver` or `truck` and will be handled differently. The key is the `driver_id` or the `truck_id` and the value is the information of the driver or the truck.
 
 ```json
 {
