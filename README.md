@@ -85,7 +85,8 @@ The aggregation is done by the `driver_id` between the first topic and the secon
 
 ## Topic result
 
-The result of the merge will be a json flat topic of our three producer topics.
+The result of the merge, called `report`, will be a json flat topic of our three producers topics.
+The topic is called `report_topic`
 
 ```json
 {
