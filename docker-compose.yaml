@@ -56,9 +56,26 @@ services:
       - "6379:6379"
     volumes:
       - redis_volume:/var/lib/redis/data
+  trino:
+    image: trinodb/trino:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - TRINO_ENVIRONMENT=production
+      - TRINO_JVM_MAX_HEAP_SIZE=4GB
+      - TRINO_JVM_OFF_HEAP_SIZE=4GB
+      - TRINO_QUERY_MAX_MEMORY=1GB
+      - TRINO_QUERY_MAX_MEMORY_PER_NODE=1GB
+      - TRINO_QUERY_MAX_TOTAL_MEMORY=2GB
+      - TRINO_DISCOVERY_URI=http://trino:8080
+    depends_on:
+      - kafka
+    volumes:
+      - trino_data:/var/lib/trino/data
 
 volumes:
   kafka_volume:
   minio:
   redis_volume:
   kafka_data:
+  trino_data:
