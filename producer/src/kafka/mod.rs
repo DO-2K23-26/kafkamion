@@ -3,6 +3,7 @@ use rdkafka::{
     util::Timeout,
     ClientConfig,
 };
+use tracing::{debug, info};
 
 pub struct KafkaClient {
     producer: FutureProducer,
@@ -15,11 +16,12 @@ impl KafkaClient {
                 .set("bootstrap.servers", broker)
                 .set("message.timeout.ms", "5000")
                 .create()
-                .expect("Producer creation error"),
+                .unwrap()
         }
     }
 
     pub async fn publish(&self, topic: &str, payload: &str, key: &str) {
+        info!("sent {} to topic {}", payload, topic);
         self.producer
             .send(
                 FutureRecord::to(topic).payload(payload).key(key),

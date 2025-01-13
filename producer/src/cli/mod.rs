@@ -1,6 +1,7 @@
-use std::process::ExitCode;
+use std::{process::ExitCode, sync::Arc};
 
 use clap::{Parser, Subcommand};
+use tracing::info;
 
 use crate::{
     events::{driver::DriverEvent, EventSource},
@@ -37,18 +38,30 @@ impl Cli {
     }
 
     pub async fn execute(&self, app: App) -> Result<ExitCode, ExitCode> {
-        let client = KafkaClient::new(&app.endpoint);
+        info!("Execution...");
+        let client = Arc::new(KafkaClient::new(&app.endpoint));
 
+        info!("Connected to consumer at {}", app.endpoint);
         match app.action {
             Command::Truck => {
                 todo!("to do");
             }
             Command::Driver => {
-                let event_generator = DriverEvent::new();
+                let event_generator = Arc::new(DriverEvent::new());
+                //let mut handles = Vec::new();
                 for _ in 0..app.count {
-                    let data = event_generator.generate();
-                    client.publish("entity_topic", &data, "driver").await;
+                    let client = client.clone();
+                    let event_generator = event_generator.clone();
+                    //let handle = tokio::spawn(async move {
+                        let data = event_generator.generate();
+                        info!("generated {}", data);
+                        client.publish("entity_topic", &data, "driver").await;
+                    //});
+                    //handles.push(handle);
                 }
+
+                //handles.
+
                 Ok(ExitCode::SUCCESS)
             }
             Command::Position => {
