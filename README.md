@@ -5,7 +5,8 @@
 1. [Architecture](#architecture)
 2. [Topics](#topics)
 3. [Topic description](#topic-description)
-4. [Topic result](#topic-result)
+4. [Agregation](#agregation)
+5. [Topic result](#topic-result)
 
 ## Architecture
 
@@ -13,15 +14,26 @@
 
 ## Topics
 
-1. Driver
+1. Entity registration
+The type can be 'driver' or 'truck' and will be handled differently. The key is the driver_id or the truck_id and the value is the information of the driver or the truck.
 
 ```json
 {
-    "driver_id": "string",
+    "type": "string",
+    "truck_id": "string",
     "first_name": "string",
     "last_name": "string",
     "email": "string",
     "phone": "string"
+}
+```
+
+or
+
+```json
+{
+     "truck_id": "string",
+     "immatriculation": "string"
 }
 ```
 
@@ -57,7 +69,12 @@ This topic is used to store the time registration of the driver. The key is the 
 3. **Topic 3**
 This topic is used to store the position of the driver. The key is the truck_id and the value is the position of the driver.
 
+## Agregation
+
+The aggregation is done by the driver_id between the first topic and the second. The aggregation is done by the truck_id for the second and the third topic.
+
 ## Topic result
+
 The result of the merge will be a json flat topic of our three producer topics.
 
 ```json
