@@ -2,7 +2,7 @@ use crate::config::CONFIG;
 use log::{error, info};
 use rdkafka::consumer::{BaseConsumer, Consumer};
 use rdkafka::{ClientConfig, Message};
-use serde_json::{Map, Value};
+use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -14,15 +14,15 @@ pub fn is_kafka_available(client_config: &ClientConfig) -> bool {
     match client_config.create::<BaseConsumer>() {
         Ok(consumer) => {
             if consumer.fetch_metadata(None, Duration::from_secs(3)).is_ok() {
-                info!("Kafka is reachable !");
+                info!("Kafka is reachable!");
                 true
             } else {
-                error!("Kafka is unreachable !");
+                error!("Kafka is unreachable!");
                 false
             }
         }
         Err(err) => {
-            error!("An error has occured while trying to connect to Kafka : {:?}", err);
+            error!("An error has occurred while trying to connect to Kafka: {:?}", err);
             false
         }
     }
@@ -30,15 +30,24 @@ pub fn is_kafka_available(client_config: &ClientConfig) -> bool {
 
 #[derive(Debug)]
 enum EventType {
-    Entity,
+    Entity(EntityType),
     TimeRegistration,
     Position,
     Unknown,
 }
 
+#[derive(Debug)]
+enum EntityType {
+    Driver,
+    Truck,
+}
+
+/// Detects the type of event based on the given payload.
 fn detect_event_type(payload: &Value) -> EventType {
-    if (payload.get("driver_id").is_some() && payload.get("first_name").is_some()) || (payload.get("truck_id").is_some() && payload.get("immatriculation").is_some()) {
-        EventType::Entity
+    if payload.get("driver_id").is_some() && payload.get("first_name").is_some() {
+        EventType::Entity(EntityType::Driver)
+    } else if payload.get("truck_id").is_some() && payload.get("immatriculation").is_some() {
+        EventType::Entity(EntityType::Truck)
     } else if payload.get("truck_id").is_some() && payload.get("latitude").is_some() {
         EventType::Position
     } else if payload.get("timestamp").is_some() && payload.get("driver_id").is_some() {
@@ -84,7 +93,8 @@ pub fn consumer(client_config: ClientConfig) {
                                 Ok(parsed_message) => {
                                     let event_type = detect_event_type(&parsed_message);
                                     let event_key = match event_type {
-                                        EventType::Entity => "entity",
+                                        EventType::Entity(EntityType::Driver) => "entity_driver",
+                                        EventType::Entity(EntityType::Truck) => "entity_truck",
                                         EventType::TimeRegistration => "time_registration",
                                         EventType::Position => "position",
                                         EventType::Unknown => "unknown",
