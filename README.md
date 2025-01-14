@@ -131,7 +131,7 @@ docker exec --workdir /opt/kafka/bin/ -it <shaKafka> sh
 /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --topic entity_topic --partitions 1 --replication-factor 1
 ```
 
-4. In another terminal, run the producer
+4. Mock the producer
 ```bash
 ./kafka-console-producer.sh --bootstrap-server localhost:9092 --topic time_registration_topic
 ```
