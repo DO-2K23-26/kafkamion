@@ -6,7 +6,7 @@ use serde::Serialize;
 use std::process::ExitCode;
 use uuid::Uuid;
 
-pub struct DriverEvent {
+pub struct MessageEvent {
     data: Vec<Message>,
 }
 
@@ -52,32 +52,30 @@ struct Message {
     timestamp_rest: String,
 }
 
-impl DriverEvent {
+impl MessageEvent {
     fn new() -> Self {
         Self { data: Vec::new() }
     }
 
     fn generate(&mut self) {
-        let message: Message = Faker.fake(); // Générez un message factice
+        let message: Message = Faker.fake();
         self.data.push(message);
     }
 
     fn saver(&self) -> Result<ExitCode, ExitCode> {
         for message in &self.data {
-            println!("{:?}", message); // Affichez chaque message au format Debug
+            println!("{:?}", message);
         }
         Ok(ExitCode::SUCCESS)
     }
 }
 
 fn main() {
-    let mut driver_event = DriverEvent::new();
+    let mut message_event = MessageEvent::new();
 
-    // Génération de 10 messages factices
     for _ in 0..10 {
-        driver_event.generate();
+        message_event.generate();
     }
 
-    // Sauvegarde (affichage dans la console ici)
-    driver_event.saver().unwrap();
+    message_event.saver().unwrap();
 }
