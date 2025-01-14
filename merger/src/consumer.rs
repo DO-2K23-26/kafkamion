@@ -2,6 +2,8 @@ use crate::config::CONFIG;
 use log::{error, info};
 use rdkafka::consumer::{BaseConsumer, Consumer};
 use rdkafka::{ClientConfig, Message};
+use serde_json::{Map, Value};
+use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
@@ -26,6 +28,26 @@ pub fn is_kafka_available(client_config: &ClientConfig) -> bool {
     }
 }
 
+#[derive(Debug)]
+enum EventType {
+    Entity,
+    TimeRegistration,
+    Position,
+    Unknown,
+}
+
+fn detect_event_type(payload: &Value) -> EventType {
+    if payload.get("driver_id").is_some() && payload.get("first_name").is_some() {
+        EventType::Entity
+    } else if payload.get("truck_id").is_some() && payload.get("latitude").is_some() {
+        EventType::Position
+    } else if payload.get("timestamp").is_some() && payload.get("driver_id").is_some() {
+        EventType::TimeRegistration
+    } else {
+        EventType::Unknown
+    }
+}
+
 pub fn consumer(client_config: ClientConfig) {
     // Log the configuration
     info!("Configuration: {:#?}", client_config);
@@ -35,35 +57,57 @@ pub fn consumer(client_config: ClientConfig) {
         return;
     }
 
-    // Shared resource for logging or data processing
-    let shared_resource = Arc::new(Mutex::new(Vec::new()));
+    if !is_kafka_available(&client_config) {
+        error!("Kafka is not available. Exiting...");
+        return;
+    }
 
-    // List of topics to subscribe to
-    let topics = vec!["topic1", "topic2", "topic3"];
+    // Shared HashMap for storing parsed messages
+    let shared_store: Arc<Mutex<HashMap<String, Vec<Value>>>> = Arc::new(Mutex::new(HashMap::new()));
 
     // Spawn a thread for each topic
     for topic in &CONFIG.topics {
         let client_config = client_config.clone();
-        let shared_resource = Arc::clone(&shared_resource);
-        let topic = topic.clone(); // Cloner le sujet pour le thread
-    
+        let shared_store = Arc::clone(&shared_store);
+        let topic = topic.clone();
+
         thread::spawn(move || {
             let consumer: BaseConsumer = client_config.create().expect("Consumer creation failed");
-    
+
             consumer
                 .subscribe(&[&topic])
                 .expect("Subscription to topic failed");
-    
+
             loop {
                 match consumer.poll(Duration::from_millis(1000)) {
                     Some(Ok(message)) => {
                         if let Some(payload) = message.payload() {
                             let payload_str = String::from_utf8_lossy(payload);
-                            {
-                                let mut resource = shared_resource.lock().unwrap();
-                                resource.push(format!("Topic: {}, Message: {}", topic, payload_str));
+
+                            // Parse the message as JSON
+                            match serde_json::from_str::<Value>(&payload_str) {
+                                Ok(parsed_message) => {
+                                    let event_type = detect_event_type(&parsed_message);
+                                    let event_key = match event_type {
+                                        EventType::Entity => "entity",
+                                        EventType::TimeRegistration => "time_registration",
+                                        EventType::Position => "position",
+                                        EventType::Unknown => "unknown",
+                                    };
+
+                                    // Store the parsed message in the shared store
+                                    {
+                                        let mut store = shared_store.lock().unwrap();
+                                        let entry = store.entry(event_key.to_string()).or_insert_with(Vec::new);
+                                        entry.push(parsed_message.clone());
+                                    }
+
+                                    println!("Parsed event ({}) from {}: {:?}", event_key, topic, parsed_message);
+                                }
+                                Err(err) => {
+                                    eprintln!("Failed to parse message from {}: {}", topic, err);
+                                }
                             }
-                            println!("Received from {}: {}", topic, payload_str);
                         }
                     }
                     Some(Err(err)) => {
@@ -76,7 +120,6 @@ pub fn consumer(client_config: ClientConfig) {
             }
         });
     }
-    
 
     // Prevent main thread from exiting
     loop {
