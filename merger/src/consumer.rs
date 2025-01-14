@@ -103,14 +103,15 @@ pub fn consumer(client_config: ClientConfig) {
                             // Parse the message as JSON
                             match serde_json::from_str::<Value>(&payload_str) {
                                 Ok(parsed_message) => {
-                                    if(topic == "topic1") {
-                                        let event_type = detect_event_type_topic1(&parsed_message);
-                                    } else if(topic == "topic2") {
-                                        let event_type = detect_event_type_topic2(&parsed_message);
-                                    } else if(topic == "topic3") {
-                                        let event_type = detect_event_type_topic3(&parsed_message);
-                                    }
-                                    let event_type = detect_event_type(&parsed_message);
+                                    let event_type = if topic == "entity_topic" {
+                                        detect_event_type_topic1(&parsed_message)
+                                    } else if topic == "time_registration_topic" {
+                                        detect_event_type_topic2(&parsed_message)
+                                    } else if topic == "position_topic" {
+                                        detect_event_type_topic3(&parsed_message)
+                                    } else {
+                                        EventType::Unknown
+                                    };
                                     let event_key = match event_type {
                                         EventType::Entity(EntityType::Driver) => "entity_driver",
                                         EventType::Entity(EntityType::Truck) => "entity_truck",
