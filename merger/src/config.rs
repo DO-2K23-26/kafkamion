@@ -6,7 +6,7 @@ use serde::Deserialize;
 #[derive(Deserialize, Debug)]
 pub struct Config {
     pub kafka_broker: String,
-    pub topic: String,
+    pub topics: Vec<String>, 
     pub group_id: String,
 }
 
