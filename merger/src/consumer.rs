@@ -1,14 +1,39 @@
 use crate::config::CONFIG;
-use log::{info};
+use log::{error, info};
 use rdkafka::consumer::{BaseConsumer, Consumer};
 use rdkafka::{ClientConfig, Message};
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
 
+/// Checks if Kafka is available by attempting to connect to the server.
+/// Returns `true` if the connection is successful, otherwise `false`.
+pub fn is_kafka_available(client_config: &ClientConfig) -> bool {
+    match client_config.create::<BaseConsumer>() {
+        Ok(consumer) => {
+            if consumer.fetch_metadata(None, Duration::from_secs(3)).is_ok() {
+                info!("Kafka is reachable !");
+                true
+            } else {
+                error!("Kafka is unreachable !");
+                false
+            }
+        }
+        Err(err) => {
+            error!("An error has occured while trying to connect to Kafka : {:?}", err);
+            false
+        }
+    }
+}
+
 pub fn consumer(client_config: ClientConfig) {
     // Log the configuration
     info!("Configuration: {:#?}", client_config);
+
+    if !is_kafka_available(&client_config) {
+        error!("Kafka is not available. Exiting...");
+        return;
+    }
 
     // Shared resource for logging or data processing
     let shared_resource = Arc::new(Mutex::new(Vec::new()));
