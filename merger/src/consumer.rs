@@ -1,41 +1,60 @@
 use crate::config::CONFIG;
-use crate::models::Person;
-use log::{debug, info};
+use log::{info};
 use rdkafka::consumer::{BaseConsumer, Consumer};
 use rdkafka::{ClientConfig, Message};
+use std::sync::{Arc, Mutex};
+use std::thread;
 use std::time::Duration;
 
 pub fn consumer(client_config: ClientConfig) {
-    //log the configuration
+    // Log the configuration
     info!("Configuration: {:#?}", client_config);
-    // Create a new Kafka consumer using the provided client configuration
-    let consumer: BaseConsumer = client_config.create().expect("Consumer creation failed");
 
-    // Subscribe to the "entity_topic" Kafka topic
-    consumer
-        .subscribe(&[&CONFIG.topic])
-        .expect("Subscription to topic failed");
+    // Shared resource for logging or data processing
+    let shared_resource = Arc::new(Mutex::new(Vec::new()));
 
-    // Start an infinite loop for polling messages from Kafka
-    loop {
-        match consumer.poll(Duration::from_millis(100)) {
-            Some(Ok(message)) => {
-                if let Some(payload) = message.detach().payload() {
-                    // Deserialize the payload assuming it's UTF-8 encoded
-                    //It will be different depending on the data format
+    // List of topics to subscribe to
+    let topics = vec!["topic1", "topic2", "topic3"];
 
-                    // Log the deserialized person object
-
-
-                    println!("Received message: {:?}", payload);
+    // Spawn a thread for each topic
+    for topic in &CONFIG.topics {
+        let client_config = client_config.clone();
+        let shared_resource = Arc::clone(&shared_resource);
+        let topic = topic.clone(); // Cloner le sujet pour le thread
+    
+        thread::spawn(move || {
+            let consumer: BaseConsumer = client_config.create().expect("Consumer creation failed");
+    
+            consumer
+                .subscribe(&[&topic])
+                .expect("Subscription to topic failed");
+    
+            loop {
+                match consumer.poll(Duration::from_millis(1000)) {
+                    Some(Ok(message)) => {
+                        if let Some(payload) = message.payload() {
+                            let payload_str = String::from_utf8_lossy(payload);
+                            {
+                                let mut resource = shared_resource.lock().unwrap();
+                                resource.push(format!("Topic: {}, Message: {}", topic, payload_str));
+                            }
+                            println!("Received from {}: {}", topic, payload_str);
+                        }
+                    }
+                    Some(Err(err)) => {
+                        eprintln!("Error in topic {}: {:?}", topic, err);
+                    }
+                    None => {
+                        println!("No message received from topic: {}", topic);
+                    }
                 }
             }
-            Some(Err(err)) => {
-                println!("Error: {:?}", err);
-            }
-            None => {
-                // println!("No message received");
-            }
-        }
+        });
+    }
+    
+
+    // Prevent main thread from exiting
+    loop {
+        thread::park();
     }
 }
