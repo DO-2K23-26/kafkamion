@@ -43,14 +43,26 @@ enum EntityType {
 }
 
 /// Detects the type of event based on the given payload.
-fn detect_event_type(payload: &Value) -> EventType {
+fn detect_event_type_topic1(payload: &Value) -> EventType {
     if payload.get("driver_id").is_some() && payload.get("first_name").is_some() {
         EventType::Entity(EntityType::Driver)
     } else if payload.get("truck_id").is_some() && payload.get("immatriculation").is_some() {
         EventType::Entity(EntityType::Truck)
-    } else if payload.get("truck_id").is_some() && payload.get("latitude").is_some() {
+    } else {
+        EventType::Unknown
+    }
+}
+
+fn detect_event_type_topic2(payload: &Value) -> EventType {
+   if payload.get("truck_id").is_some() && payload.get("latitude").is_some() {
         EventType::Position
-    } else if payload.get("timestamp").is_some() && payload.get("driver_id").is_some() {
+    } else {
+        EventType::Unknown
+    }
+}
+
+fn detect_event_type_topic3(payload: &Value) -> EventType {
+    if payload.get("timestamp").is_some() && payload.get("driver_id").is_some() {
         EventType::TimeRegistration
     } else {
         EventType::Unknown
@@ -91,6 +103,13 @@ pub fn consumer(client_config: ClientConfig) {
                             // Parse the message as JSON
                             match serde_json::from_str::<Value>(&payload_str) {
                                 Ok(parsed_message) => {
+                                    if(topic == "topic1") {
+                                        let event_type = detect_event_type_topic1(&parsed_message);
+                                    } else if(topic == "topic2") {
+                                        let event_type = detect_event_type_topic2(&parsed_message);
+                                    } else if(topic == "topic3") {
+                                        let event_type = detect_event_type_topic3(&parsed_message);
+                                    }
                                     let event_type = detect_event_type(&parsed_message);
                                     let event_key = match event_type {
                                         EventType::Entity(EntityType::Driver) => "entity_driver",
