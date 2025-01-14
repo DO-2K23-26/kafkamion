@@ -2,12 +2,25 @@ use crate::config::CONFIG;
 use crate::consumer::consumer;
 use rdkafka::config::ClientConfig;
 use log::info;
+use models::entity::Entity;
+use models::position::Position;
+use models::time_registration::TimeRegistration;
+use chrono::Utc;
 
 mod config;
 mod consumer;
 mod models;
 
 fn main() {
+    let entity = Entity::newDriver("driver".to_string(), "D-123".to_string(), "baptiste".to_string(), "bronsin".to_string(), "email".to_string(), "+330650353421".to_string());
+    println!("{:?}", entity);
+    let entity = Entity::newTruck("truck".to_string(), "T-123".to_string(), "123AB456".to_string());
+    println!("{:?}", entity);
+    let time_registration = TimeRegistration::new("start".to_string(), "2025-01-09T08:41:00Z".to_string(), "D-123".to_string(), "T-123".to_string());
+    println!("{:?}", time_registration);
+    let pos = Position::new("T-123".to_string(), 123.0, 456.0, Utc::now().to_string());
+    println!("{:?}", pos);
+
     env_logger::init(); // Initialize the logger
 
     // Create a new client configuration
