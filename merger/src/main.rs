@@ -1,15 +1,14 @@
+mod config;
+mod consumer;
+mod models;
+
 use crate::config::CONFIG;
 use crate::consumer::consumer;
 use rdkafka::config::ClientConfig;
-use log::info;
 use models::entity::Entity;
 use models::position::Position;
 use models::time_registration::TimeRegistration;
 use chrono::Utc;
-
-mod config;
-mod consumer;
-mod models;
 
 fn main() {
     let entity = Entity::newDriver("driver".to_string(), "D-123".to_string(), "baptiste".to_string(), "bronsin".to_string(), "email".to_string(), "+330650353421".to_string());

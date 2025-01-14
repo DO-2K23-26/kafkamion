@@ -1,6 +1,6 @@
-use serde_derive::Deserialize;
+use serde::Deserialize;
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct Report {
     pub driver_id: String,
     pub first_name: String,
