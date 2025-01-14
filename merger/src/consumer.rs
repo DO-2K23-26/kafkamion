@@ -37,7 +37,7 @@ enum EventType {
 }
 
 fn detect_event_type(payload: &Value) -> EventType {
-    if payload.get("driver_id").is_some() && payload.get("first_name").is_some() {
+    if (payload.get("driver_id").is_some() && payload.get("first_name").is_some()) || (payload.get("truck_id").is_some() && payload.get("immatriculation").is_some()) {
         EventType::Entity
     } else if payload.get("truck_id").is_some() && payload.get("latitude").is_some() {
         EventType::Position
@@ -51,11 +51,6 @@ fn detect_event_type(payload: &Value) -> EventType {
 pub fn consumer(client_config: ClientConfig) {
     // Log the configuration
     info!("Configuration: {:#?}", client_config);
-
-    if !is_kafka_available(&client_config) {
-        error!("Kafka is not available. Exiting...");
-        return;
-    }
 
     if !is_kafka_available(&client_config) {
         error!("Kafka is not available. Exiting...");
@@ -114,7 +109,7 @@ pub fn consumer(client_config: ClientConfig) {
                         eprintln!("Error in topic {}: {:?}", topic, err);
                     }
                     None => {
-                        println!("No message received from topic: {}", topic);
+                        // println!("No message received from topic: {}", topic);
                     }
                 }
             }
