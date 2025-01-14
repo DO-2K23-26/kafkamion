@@ -7,6 +7,7 @@
 3. [Topic description](#topic-description)
 4. [Agregation](#agregation)
 5. [Topic result](#topic-result)
+6. [How to run](#how-to-run)
 
 ## Architecture
 
@@ -107,3 +108,31 @@ The topic is called `report_topic`
     "timestamp_rest": "string"
 }
 ```
+
+## How to run
+We use docker-compose to run our system. To run the stack, you need to run the following command:
+
+1. Up the stack
+```bash
+docker-compose up -d
+```
+
+2. Connect to a bash container
+```bash
+docker exec --workdir /opt/kafka/bin/ -it <shaKafka> sh
+```
+**Note**: `<shaKafka>` is the sha of the kafka container. You can get it by running `docker ps`
+
+3. Create the topics
+```bash
+/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --topic position_topic --partitions 1 --replication-factor 1
+/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --topic time_registration_topic --partitions 1 --replication-factor 1
+/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --topic report_topic --partitions 1 --replication-factor 1
+/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --create --topic entity_topic --partitions 1 --replication-factor 1
+```
+
+4. In another terminal, run the producer
+```bash
+./kafka-console-producer.sh --bootstrap-server localhost:9092 --topic time_registration_topic
+```
+**Note**: You can replace `time_registration_topic` by `position_topic` or `entity_topic`
