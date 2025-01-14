@@ -1,5 +1,3 @@
-use std::process::ExitCode;
-
 use fake::{Dummy, Fake, Faker};
 use fake::faker::name::en::{Name, LastName, FirstName};
 use fake::faker::internet::en::FreeEmail;
@@ -15,17 +13,17 @@ pub struct DriverEvent {
 #[derive(Debug, Clone, Dummy, Serialize)]
 pub struct Driver {
     #[dummy(expr = "\"driver\".to_string()")]
-    r#type: String,
+    pub r#type: String,
     #[dummy(expr = "Uuid::new_v4().to_string()")]
-    driver_id: String,
+    pub driver_id: String,
     #[dummy(faker = "FirstName()")]
-    first_name: String,
+    pub first_name: String,
     #[dummy(faker = "LastName()")]
-    last_name: String,
+    pub last_name: String,
     #[dummy(faker = "FreeEmail()")]
-    email: String,
+    pub email: String,
     #[dummy(faker = "Name()")]
-    phone: String
+    pub phone: String
 }
 
 impl DriverEvent {
@@ -36,8 +34,9 @@ impl DriverEvent {
 }
 
 impl EventSource for DriverEvent {
-    fn generate(&self) -> String {
+    fn generate(&self) -> Vec<String> {
         let data: Driver = Faker.fake();
-        serde_json::to_string(&data).unwrap()
+        serde_json::to_string(&data).unwrap();
+        vec![serde_json::to_string(&data).unwrap()]
     }
 }

@@ -6,5 +6,5 @@ pub mod truck;
 pub mod position;
 
 pub trait EventSource {
-    fn generate(&self) -> String;
+    fn generate(&self) -> Vec<String>;
 }
