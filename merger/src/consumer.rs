@@ -42,32 +42,26 @@ enum EntityType {
     Truck,
 }
 
-/// Detects the type of event based on the given payload.
-fn detect_event_type_topic1(payload: &Value) -> EventType {
-    if payload.get("driver_id").is_some() && payload.get("first_name").is_some() {
-        EventType::Entity(EntityType::Driver)
-    } else if payload.get("truck_id").is_some() && payload.get("immatriculation").is_some() {
-        EventType::Entity(EntityType::Truck)
-    } else {
-        EventType::Unknown
+fn detect_event_type_topic(payload: &Value) -> EventType {
+    if let Some(type_value) = payload.get("type") {
+        println!("type: {:?}", type_value);
+    }
+
+    match payload.get("type_") {
+        Some(r#type) => match r#type.as_str() {
+            Some("driver") => EventType::Entity(EntityType::Driver),
+            Some("truck") => EventType::Entity(EntityType::Truck),
+            Some("start") => EventType::TimeRegistration,
+            Some("end") => EventType::TimeRegistration,
+            Some("rest") => EventType::TimeRegistration,
+            Some("position") => EventType::Position,
+            _ => EventType::Unknown,
+        },
+        None => EventType::Unknown,
     }
 }
 
-fn detect_event_type_topic2(payload: &Value) -> EventType {
-   if payload.get("truck_id").is_some() && payload.get("latitude").is_some() {
-        EventType::Position
-    } else {
-        EventType::Unknown
-    }
-}
 
-fn detect_event_type_topic3(payload: &Value) -> EventType {
-    if payload.get("timestamp").is_some() && payload.get("driver_id").is_some() {
-        EventType::TimeRegistration
-    } else {
-        EventType::Unknown
-    }
-}
 
 pub fn consumer(client_config: ClientConfig) {
     // Log the configuration
@@ -103,15 +97,9 @@ pub fn consumer(client_config: ClientConfig) {
                             // Parse the message as JSON
                             match serde_json::from_str::<Value>(&payload_str) {
                                 Ok(parsed_message) => {
-                                    let event_type = if topic == "entity_topic" {
-                                        detect_event_type_topic1(&parsed_message)
-                                    } else if topic == "time_registration_topic" {
-                                        detect_event_type_topic2(&parsed_message)
-                                    } else if topic == "position_topic" {
-                                        detect_event_type_topic3(&parsed_message)
-                                    } else {
-                                        EventType::Unknown
-                                    };
+                                    // Detect the event type
+                                    let event_type = detect_event_type_topic(&parsed_message);
+
                                     let event_key = match event_type {
                                         EventType::Entity(EntityType::Driver) => "entity_driver",
                                         EventType::Entity(EntityType::Truck) => "entity_truck",
@@ -151,3 +139,5 @@ pub fn consumer(client_config: ClientConfig) {
         thread::park();
     }
 }
+
+
