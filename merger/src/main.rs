@@ -20,7 +20,6 @@ fn main() {
     let pos = Position::new("T-123".to_string(), 123.0, 456.0, Utc::now().to_string());
     println!("{:?}", pos);
 
-    env_logger::init(); // Initialize the logger
 
     // Create a new client configuration
     let mut client_config = ClientConfig::new();

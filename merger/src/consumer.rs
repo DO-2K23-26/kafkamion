@@ -1,5 +1,4 @@
 use crate::config::CONFIG;
-use log::{error, info};
 use rdkafka::consumer::{BaseConsumer, Consumer};
 use rdkafka::{ClientConfig, Message};
 use serde_json::Value;
@@ -7,6 +6,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use std::time::Duration;
+use tracing::{error, info};
 
 /// Checks if Kafka is available by attempting to connect to the server.
 /// Returns `true` if the connection is successful, otherwise `false`.
@@ -44,7 +44,7 @@ enum EntityType {
 
 fn detect_event_type_topic(payload: &Value) -> EventType {
     if let Some(type_value) = payload.get("type") {
-        println!("type: {:?}", type_value);
+        tracing::debug!("Type detected: {:?}", type_value);
     }
 
     match payload.get("type_") {
@@ -61,10 +61,9 @@ fn detect_event_type_topic(payload: &Value) -> EventType {
     }
 }
 
-
-
 pub fn consumer(client_config: ClientConfig) {
-    // Log the configuration
+    tracing_subscriber::fmt::init();
+
     info!("Configuration: {:#?}", client_config);
 
     if !is_kafka_available(&client_config) {
@@ -115,19 +114,20 @@ pub fn consumer(client_config: ClientConfig) {
                                         entry.push(parsed_message.clone());
                                     }
 
-                                    println!("Parsed event ({}) from {}: {:?}", event_key, topic, parsed_message);
+                                    info!("Parsed event ({}) from {}: {:?}", event_key, topic, parsed_message);
                                 }
                                 Err(err) => {
-                                    eprintln!("Failed to parse message from {}: {}", topic, err);
+                                    error!("Failed to parse message from {}: {}", topic, err);
                                 }
                             }
                         }
                     }
                     Some(Err(err)) => {
-                        eprintln!("Error in topic {}: {:?}", topic, err);
+                        error!("Error in topic {}: {:?}", topic, err);
                     }
                     None => {
-                        // println!("No message received from topic: {}", topic);
+                        // Uncomment for heartbeat messages if needed
+                        // debug!("No message received from topic: {}", topic);
                     }
                 }
             }
@@ -139,5 +139,3 @@ pub fn consumer(client_config: ClientConfig) {
         thread::park();
     }
 }
-
-
