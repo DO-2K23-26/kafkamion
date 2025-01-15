@@ -75,6 +75,15 @@ fn detect_event_type_topic(payload: &Value) -> Event {
     }
 }
 
+/// Extracts a key (e.g., truck_id or driver_id) from the payload.
+fn get_key_from_message(payload: &Value) -> String {
+    payload
+        .get("truck_id")
+        .and_then(Value::as_str)
+        .map(String::from)
+        .unwrap_or_else(|| payload.get("driver_id").and_then(Value::as_str).unwrap_or_default().to_string())
+}
+
 /// Kafka consumer for processing events.
 #[tokio::main]
 pub async fn consumer(client_config: ClientConfig) {
@@ -168,37 +177,35 @@ pub async fn consumer(client_config: ClientConfig) {
                                             }
                                             _ => {}
                                         },
-                                        Event::Position(ref position) => match position.type_.as_str() {
-                                            "start" => {
-                                                start_position_store.lock().await.insert(position.truck_id.clone(), position.clone());
-                                                let start_position_snapshot = start_position_store.lock().await;
-                                                info!("Updated Start position store: {:?}", *start_position_snapshot);
-                                            }
-                                            "end" => {
-                                                end_position_store.lock().await.insert(position.truck_id.clone(), position.clone());
-                                                let end_position_snapshot = end_position_store.lock().await;
-                                                info!("Updated End position store: {:?}", *end_position_snapshot);
-                                            }
-                                            "rest" => {
-                                                rest_position_store.lock().await.insert(position.truck_id.clone(), position.clone());
-                                                let rest_position_snapshot = rest_position_store.lock().await;
-                                                info!("Updated Rest position store: {:?}", *rest_position_snapshot);
-                                            }
-                                            _ => {}
+                                        Event::Position(ref position) => {
+                                            // Insert the position into the start, end, and rest position stores
+                                            let mut start_position_store_lock = start_position_store.lock().await;
+                                            start_position_store_lock.insert(position.truck_id.clone(), position.clone());
+                                            info!("Updated Start position store: {:?}", start_position_store_lock);
+                                        
+                                            let mut end_position_store_lock = end_position_store.lock().await;
+                                            end_position_store_lock.insert(position.truck_id.clone(), position.clone());
+                                            info!("Updated End position store: {:?}", end_position_store_lock);
+                                        
+                                            let mut rest_position_store_lock = rest_position_store.lock().await;
+                                            rest_position_store_lock.insert(position.truck_id.clone(), position.clone());
+                                            info!("Updated Rest position store: {:?}", rest_position_store_lock);
                                         },
                                         Event::Unknown => error!("Unknown event type: {:?}", parsed_message),
                                     }
 
-
-                                    info!("Report for key {} and event type {:?} the full report is :  {:?}", key, event_type, report);
-
-                                    if report.is_complete() {
-                                        let completed_report = store.remove(&key);
-
-                                        if let Some(report) = completed_report {
-                                            info!("Processing completed report: {:?}", report);
-                                            process_report(report);
-                                        }
+                                    if let Some(report) = get_matching_entry(
+                                        &start_time_store,
+                                        &end_time_store,
+                                        &rest_time_store,
+                                        &start_position_store,
+                                        &end_position_store,
+                                        &rest_position_store,
+                                        &driver_store,
+                                        &truck_store,
+                                        &key,
+                                    ).await {
+                                        process_report(report);
                                     }
                                 }
                             }
@@ -218,18 +225,63 @@ pub async fn consumer(client_config: ClientConfig) {
         .expect("Failed to listen for ctrl-c signal");
 }
 
+pub async fn get_matching_entry(
+    start_time_store: &Arc<Mutex<HashMap<String, TimeRegistration>>>,
+    end_time_store: &Arc<Mutex<HashMap<String, TimeRegistration>>>,
+    rest_time_store: &Arc<Mutex<HashMap<String, TimeRegistration>>>,
+    start_position_store: &Arc<Mutex<HashMap<String, Position>>>,
+    end_position_store: &Arc<Mutex<HashMap<String, Position>>>,
+    rest_position_store: &Arc<Mutex<HashMap<String, Position>>>,
+    driver_store: &Arc<Mutex<HashMap<String, Driver>>>,
+    truck_store: &Arc<Mutex<HashMap<String, Truck>>>,
+    key: &str,
+) -> Option<Report> {
+    let start_time = start_time_store.lock().await.get(key).cloned();
+    let end_time = end_time_store.lock().await.get(key).cloned();
+    let rest_time = rest_time_store.lock().await.get(key).cloned();
 
-/// Extracts a key (e.g., truck_id or driver_id) from the payload.
-fn get_key_from_message(payload: &Value) -> String {
-    payload
-        .get("truck_id")
-        .and_then(Value::as_str)
-        .map(String::from)
-        .unwrap_or_else(|| payload.get("driver_id").and_then(Value::as_str).unwrap_or_default().to_string())
+    let start_position = start_position_store.lock().await.get(key).cloned();
+    let end_position = end_position_store.lock().await.get(key).cloned();
+    let rest_position = rest_position_store.lock().await.get(key).cloned();
+
+    let driver = driver_store.lock().await.get(key).cloned();
+    let truck = truck_store.lock().await.get(key).cloned();
+
+    if let (Some(driver), Some(truck), Some(start_time), Some(end_time), Some(rest_time), Some(start_position), Some(end_position), Some(rest_position)) = (
+        driver, truck, start_time, end_time, rest_time, start_position, end_position, rest_position) {
+        Some(Report {
+            driver_id: driver.driver_id,
+            first_name: driver.first_name,
+            last_name: driver.last_name,
+            email: driver.email,
+            phone: driver.phone,
+            truck_id: truck.truck_id,
+            immatriculation: truck.immatriculation,
+            start_time: start_time.timestamp,
+            end_time: end_time.timestamp,
+            rest_time: rest_time.timestamp,
+            latitude_start: start_position.latitude,
+            longitude_start: start_position.longitude,
+            timestamp_start: start_position.timestamp,
+            latitude_end: end_position.latitude,
+            longitude_end: end_position.longitude,
+            timestamp_end: end_position.timestamp,
+            latitude_rest: rest_position.latitude,
+            longitude_rest: rest_position.longitude,
+            timestamp_rest: rest_position.timestamp,
+        })
+    } else {
+        info!("No matching entry found for key: {}", key);
+        None
+    }
 }
+
 
 /// Processes a completed report.
 fn process_report(report: Report) {
     info!("Processing completed report: {:?}", report);
-    // Add logic to save or forward the report.
+    // Create the flat JSON representation of the report
+    let report_json = serde_json::to_value(report).expect("Failed to serialize report");
+    // You can now process the report_json further, like saving or forwarding it.
+    info!("Flat report JSON: {:?}", report_json);
 }
