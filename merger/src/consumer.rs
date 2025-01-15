@@ -87,10 +87,32 @@ pub async fn consumer(client_config: ClientConfig) {
 
     let shared_store: Arc<Mutex<HashMap<String, Report>>> = Arc::new(Mutex::new(HashMap::new()));
 
+    let driver_store: Arc<Mutex<HashMap<String, Driver>>> = Arc::new(Mutex::new(HashMap::new()));
+    let truck_store: Arc<Mutex<HashMap<String, Truck>>> = Arc::new(Mutex::new(HashMap::new()));
+
+    let start_time_store: Arc<Mutex<HashMap<String, TimeRegistration>>> = Arc::new(Mutex::new(HashMap::new()));
+    let end_time_store: Arc<Mutex<HashMap<String, TimeRegistration>>> = Arc::new(Mutex::new(HashMap::new()));
+    let rest_time_store: Arc<Mutex<HashMap<String, TimeRegistration>>> = Arc::new(Mutex::new(HashMap::new()));
+
+    let start_position_store: Arc<Mutex<HashMap<String, Position>>> = Arc::new(Mutex::new(HashMap::new()));
+    let end_position_store: Arc<Mutex<HashMap<String, Position>>> = Arc::new(Mutex::new(HashMap::new()));
+    let rest_position_store: Arc<Mutex<HashMap<String, Position>>> = Arc::new(Mutex::new(HashMap::new()));
+
     for topic in &CONFIG.topics {
         let client_config = client_config.clone();
         let shared_store = Arc::clone(&shared_store);
         let topic = topic.clone();
+
+        let driver_store = Arc::clone(&driver_store);
+        let truck_store = Arc::clone(&truck_store);
+
+        let start_time_store = Arc::clone(&start_time_store);
+        let end_time_store = Arc::clone(&end_time_store);
+        let rest_time_store = Arc::clone(&rest_time_store);
+
+        let start_position_store = Arc::clone(&start_position_store);
+        let end_position_store = Arc::clone(&end_position_store);
+        let rest_position_store = Arc::clone(&rest_position_store);
 
         tokio::spawn(async move {
             let consumer: BaseConsumer = client_config.create().expect("Consumer creation failed");
@@ -116,64 +138,62 @@ pub async fn consumer(client_config: ClientConfig) {
 
                                     let mut store = shared_store.lock().await;
                                     let report = store.entry(key.clone()).or_default();
-
+                                    
                                     match event_type {
                                         Event::Driver(ref driver) => {
-                                            report.driver_id = driver.driver_id.clone();
-                                            report.first_name = driver.first_name.clone();
-                                            report.last_name = driver.last_name.clone();
-                                            report.email = driver.email.clone();
-                                            report.phone = driver.phone.clone();
+                                            driver_store.lock().await.insert(driver.driver_id.clone(), driver.clone());
+                                            let driver_store_snapshot = driver_store.lock().await;
+                                            info!("Updated Driver store: {:?}", *driver_store_snapshot);
                                         }
                                         Event::Truck(ref truck) => {
-                                            report.truck_id = truck.truck_id.clone();
-                                            report.immatriculation = truck.immatriculation.clone();
+                                            truck_store.lock().await.insert(truck.truck_id.clone(), truck.clone());
+                                            let truck_store_snapshot = truck_store.lock().await;
+                                            info!("Updated Truck store: {:?}", *truck_store_snapshot);
                                         }
                                         Event::TimeRegistration(ref time_reg) => match time_reg.type_.as_str() {
                                             "start" => {
-                                                report.start_time = time_reg.timestamp.clone();
-                                                report.driver_id = time_reg.driver_id.clone();
-                                                report.truck_id = time_reg.truck_id.clone();
+                                                start_time_store.lock().await.insert(time_reg.driver_id.clone(), time_reg.clone());
+                                                let start_time_snapshot = start_time_store.lock().await;
+                                                info!("Updated Start time store: {:?}", *start_time_snapshot);
                                             }
                                             "end" => {
-                                                report.end_time = time_reg.timestamp.clone();
-                                                report.driver_id = time_reg.driver_id.clone();
-                                                report.truck_id = time_reg.truck_id.clone();
+                                                end_time_store.lock().await.insert(time_reg.driver_id.clone(), time_reg.clone());
+                                                let end_time_snapshot = end_time_store.lock().await;
+                                                info!("Updated End time store: {:?}", *end_time_snapshot);
                                             }
                                             "rest" => {
-                                                report.rest_time = time_reg.timestamp.clone();
-                                                report.driver_id = time_reg.driver_id.clone();
-                                                report.truck_id = time_reg.truck_id.clone();
+                                                rest_time_store.lock().await.insert(time_reg.driver_id.clone(), time_reg.clone());
+                                                let rest_time_snapshot = rest_time_store.lock().await;
+                                                info!("Updated Rest time store: {:?}", *rest_time_snapshot);
                                             }
                                             _ => {}
                                         },
                                         Event::Position(ref position) => match position.type_.as_str() {
                                             "start" => {
-                                                report.latitude_start = position.latitude; 
-                                                report.longitude_start = position.longitude; 
-                                                report.timestamp_start = position.timestamp.clone();
+                                                start_position_store.lock().await.insert(position.truck_id.clone(), position.clone());
+                                                let start_position_snapshot = start_position_store.lock().await;
+                                                info!("Updated Start position store: {:?}", *start_position_snapshot);
                                             }
                                             "end" => {
-                                                report.latitude_end = position.latitude; 
-                                                report.longitude_end = position.longitude; 
-                                                report.timestamp_end = position.timestamp.clone();
+                                                end_position_store.lock().await.insert(position.truck_id.clone(), position.clone());
+                                                let end_position_snapshot = end_position_store.lock().await;
+                                                info!("Updated End position store: {:?}", *end_position_snapshot);
                                             }
                                             "rest" => {
-                                                report.latitude_rest = position.latitude;
-                                                report.longitude_rest = position.longitude; 
-                                                report.timestamp_rest = position.timestamp.clone();
+                                                rest_position_store.lock().await.insert(position.truck_id.clone(), position.clone());
+                                                let rest_position_snapshot = rest_position_store.lock().await;
+                                                info!("Updated Rest position store: {:?}", *rest_position_snapshot);
                                             }
                                             _ => {}
                                         },
                                         Event::Unknown => error!("Unknown event type: {:?}", parsed_message),
                                     }
-                                    
-                                    
+
 
                                     info!("Report for key {} and event type {:?} the full report is :  {:?}", key, event_type, report);
 
                                     if report.is_complete() {
-                                        let completed_report = store.remove(&key); =
+                                        let completed_report = store.remove(&key);
 
                                         if let Some(report) = completed_report {
                                             info!("Processing completed report: {:?}", report);
@@ -197,6 +217,7 @@ pub async fn consumer(client_config: ClientConfig) {
         .await
         .expect("Failed to listen for ctrl-c signal");
 }
+
 
 /// Extracts a key (e.g., truck_id or driver_id) from the payload.
 fn get_key_from_message(payload: &Value) -> String {

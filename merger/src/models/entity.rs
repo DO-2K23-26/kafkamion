@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Driver {
     pub type_: String,
     pub driver_id: String,
@@ -10,14 +10,14 @@ pub struct Driver {
     pub phone: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Truck {
     pub type_: String,
     pub truck_id: String,
     pub immatriculation: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub enum Entity {
     Driver(Driver),
     Truck(Truck),
