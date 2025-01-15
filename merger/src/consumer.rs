@@ -3,9 +3,9 @@ use rdkafka::consumer::{BaseConsumer, Consumer};
 use rdkafka::{ClientConfig, Message};
 use serde_json::Value;
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
-use std::thread;
-use std::time::Duration;
+use std::sync::Arc;
+use tokio::sync::Mutex;
+use tokio::time::{sleep, Duration};
 use tracing::{error, info};
 
 /// Checks if Kafka is available by attempting to connect to the server.
@@ -61,7 +61,8 @@ fn detect_event_type_topic(payload: &Value) -> EventType {
     }
 }
 
-pub fn consumer(client_config: ClientConfig) {
+#[tokio::main]
+pub async fn consumer(client_config: ClientConfig) {
     tracing_subscriber::fmt::init();
 
     info!("Configuration: {:#?}", client_config);
@@ -74,13 +75,13 @@ pub fn consumer(client_config: ClientConfig) {
     // Shared HashMap for storing parsed messages
     let shared_store: Arc<Mutex<HashMap<String, Vec<Value>>>> = Arc::new(Mutex::new(HashMap::new()));
 
-    // Spawn a thread for each topic
+    // Spawn a task for each topic
     for topic in &CONFIG.topics {
         let client_config = client_config.clone();
         let shared_store = Arc::clone(&shared_store);
         let topic = topic.clone();
 
-        thread::spawn(move || {
+        tokio::spawn(async move {
             let consumer: BaseConsumer = client_config.create().expect("Consumer creation failed");
 
             consumer
@@ -109,7 +110,7 @@ pub fn consumer(client_config: ClientConfig) {
 
                                     // Store the parsed message in the shared store
                                     {
-                                        let mut store = shared_store.lock().unwrap();
+                                        let mut store = shared_store.lock().await;
                                         let entry = store.entry(event_key.to_string()).or_insert_with(Vec::new);
                                         entry.push(parsed_message.clone());
                                     }
@@ -130,12 +131,15 @@ pub fn consumer(client_config: ClientConfig) {
                         // debug!("No message received from topic: {}", topic);
                     }
                 }
+
+                // Sleep to prevent tight looping in case of no messages
+                sleep(Duration::from_millis(100)).await;
             }
         });
     }
 
-    // Prevent main thread from exiting
-    loop {
-        thread::park();
-    }
+    // Wait for termination signal
+    tokio::signal::ctrl_c()
+        .await
+        .expect("Failed to listen for ctrl-c signal");
 }
