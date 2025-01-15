@@ -17,4 +17,6 @@ impl TimeRegistration {
             truck_id: truck_id,
         }
     }
-}
+
+    
+}    
