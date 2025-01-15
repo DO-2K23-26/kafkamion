@@ -3,8 +3,12 @@ use fake::faker::name::en::{FirstName, LastName};
 use fake::faker::phone_number::en::PhoneNumber;
 use fake::{Dummy, Fake, Faker};
 use serde::Serialize;
+use std::io::Write;
+use std::os::unix::fs::FileExt;
 use std::process::ExitCode;
 use uuid::Uuid;
+use std::fs::File;
+use serde_json::{to_string_pretty};
 
 pub struct MessageEvent {
     data: Vec<Message>,
@@ -77,5 +81,11 @@ fn main() {
         message_event.generate();
     }
 
-    message_event.saver().unwrap();
+    // Sauvegarder les messages dans un fichier JSON
+    let json_file = "messages.json";
+    let json_data = to_string_pretty(&message_event.data).unwrap();
+    let mut file = File::create(json_file).unwrap();
+    let _ = file.write(json_data.as_bytes());
+
+    println!("Messages saved to {}", json_file);
 }
