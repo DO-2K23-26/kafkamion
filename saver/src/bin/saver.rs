@@ -169,7 +169,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Kafka configuration
     let consumer: BaseConsumer = ClientConfig::new()
         .set("group.id", "report_topic_group")
-        .set("bootstrap.servers", "127.0.0.1:9092")
+        .set("bootstrap.servers", "127.0.0.1:19092")
         .set("enable.auto.commit", "false") // Disable auto-commit
         .set("auto.offset.reset", "earliest")
         .create()
