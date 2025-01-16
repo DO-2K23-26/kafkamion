@@ -4,6 +4,10 @@ use parquet::data_type::ByteArray;
 use parquet::file::properties::WriterProperties;
 use parquet::file::writer::{FileWriter, SerializedFileWriter};
 use parquet::schema::parser::parse_message_type;
+use rdkafka::consumer::{BaseConsumer, Consumer};
+use rdkafka::message::Message as KafkaMessage;
+use rdkafka::{ClientConfig, TopicPartitionList};
+use std::time::Duration;
 use std::fs::File;
 use std::sync::Arc;
 use aws_sdk_s3::Client;
@@ -13,10 +17,7 @@ use saver::models::messages::Message;
 use dotenv::dotenv;
 
 /// Transform the JSON file into a Parquet file
-fn save_to_parquet(json_file: &str, parquet_file: &str) -> Result<(), Box<dyn std::error::Error>> {
-    // Read the JSON file
-    let json_data = std::fs::read_to_string(json_file)?;
-    let messages: Vec<Message> = serde_json::from_str(&json_data)?;
+async fn save_to_parquet_on_minio(messages: Vec<Message>, parquet_file: &str, bucket: String, key: &str, endpoint: String, access_key: String, secret_key: String) -> Result<(), Box<dyn std::error::Error>> {
 
     // Define the Parquet schema
     let message_type = "
@@ -126,7 +127,7 @@ fn save_to_parquet(json_file: &str, parquet_file: &str) -> Result<(), Box<dyn st
     }
 
     writer.close()?;
-    println!("Parquet file saved to {}", parquet_file);
+    upload_to_minio(bucket.clone(), parquet_file, key, endpoint.clone(), access_key.clone(), secret_key.clone()).await?;
     Ok(())
 }
 
@@ -163,20 +164,64 @@ async fn upload_to_minio(
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let json_file = "messages.json"; 
-    let parquet_file = "messages.parquet"; 
-
-    // Step 1: Convert the JSON file to Parquet
-    save_to_parquet(json_file, parquet_file)?;
-
-    // Step 2: Save the Parquet file to MinIO
     dotenv().ok();
-    let key = "kafkamion/messages.parquet";
-    let bucket = std::env::var("MINIO_BUCKET").expect("MINIO_BUCKET not set");
-    let endpoint = std::env::var("MINIO_ENDPOINT").expect("MINIO_ENDPOINT not set");      
-    let access_key = std::env::var("MINIO_ACCESS_KEY").expect("MINIO_ACCESS_KEY not set");
-    let secret_key = std::env::var("MINIO_SECRET_KEY").expect("MINIO_SECRET_KEY not set");
 
-    upload_to_minio(bucket, parquet_file, key, endpoint, access_key, secret_key).await?;
-    Ok(())
+    // Kafka configuration
+    let consumer: BaseConsumer = ClientConfig::new()
+        .set("group.id", "report_topic_group")
+        .set("bootstrap.servers", "127.0.0.1:9092")
+        .set("enable.auto.commit", "false") // Disable auto-commit
+        .set("auto.offset.reset", "earliest")
+        .create()
+        .expect("Failed to create consumer");
+
+    let _ = consumer.subscribe(&["report_topic"]);
+
+    println!("Consumer started for topic 'report_topic'");
+
+    let mut batch: Vec<Message> = Vec::new();
+
+    loop {
+        match consumer.poll(Duration::from_secs(1)) {
+            Some(Ok(message)) => {
+                if let Some(payload) = message.payload_view::<str>() {
+                    match payload {
+                        Ok(payload_str) => {
+                            let msg: Message = serde_json::from_str(payload_str).unwrap();
+                            batch.push(msg);
+
+                            // All 10 messages are received
+                            if batch.len() == 10 {
+                                let parquet_file = "messages.parquet";
+                                save_to_parquet_on_minio(
+                                    batch.clone(),
+                                    parquet_file,
+                                    std::env::var("MINIO_BUCKET").unwrap(),
+                                    format!("{}/{}_partition_{}.parquet", std::env::var("MINIO_BUCKET").unwrap(), message.partition(), chrono::Utc::now().timestamp_millis()).as_str(),
+                                    std::env::var("MINIO_ENDPOINT").unwrap(),
+                                    std::env::var("MINIO_ACCESS_KEY").unwrap(),
+                                    std::env::var("MINIO_SECRET_KEY").unwrap(),
+                                ).await.expect("Failed to save batch");
+                                let mut tpl = TopicPartitionList::new();
+                                for _msg in &batch {
+                                    let partition = message.partition();
+                                    let _ = tpl.add_partition_offset("report_topic", partition, rdkafka::Offset::Offset(message.offset() + 1));
+                                }
+                                consumer.commit(&tpl, rdkafka::consumer::CommitMode::Async)?;
+
+                                batch.clear();
+                            }
+                        }
+                        Err(e) => eprintln!("Failed to parse message payload: {:?}", e),
+                    }
+                }
+            }
+            Some(Err(e)) => {
+                eprintln!("Error while polling messages: {:?}", e);
+            }
+            None => {
+                println!("Waiting for messages...");
+            }
+        }
+    }
 }

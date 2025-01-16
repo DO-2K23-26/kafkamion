@@ -4,7 +4,6 @@ use fake::faker::phone_number::en::PhoneNumber;
 use fake::{Dummy, Fake, Faker};
 use serde::Serialize;
 use std::io::Write;
-use std::process::ExitCode;
 use uuid::Uuid;
 use std::fs::File;
 use serde_json::to_string_pretty;
@@ -63,13 +62,6 @@ impl MessageEvent {
     fn generate(&mut self) {
         let message: Message = Faker.fake();
         self.data.push(message);
-    }
-
-    fn saver(&self) -> Result<ExitCode, ExitCode> {
-        for message in &self.data {
-            println!("{:?}", message);
-        }
-        Ok(ExitCode::SUCCESS)
     }
 }
 
