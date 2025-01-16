@@ -80,7 +80,7 @@ fn main() {
         message_event.generate();
     }
 
-    // Sauvegarder les messages dans un fichier JSON
+    // Save the messages to a JSON file
     let json_file = "messages.json";
     let json_data = to_string_pretty(&message_event.data).unwrap();
     let mut file = File::create(json_file).unwrap();
