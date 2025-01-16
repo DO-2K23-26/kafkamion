@@ -27,7 +27,7 @@ fn save_to_parquet(json_file: &str, parquet_file: &str) -> Result<(), Box<dyn st
             REQUIRED BINARY email (UTF8);
             REQUIRED BINARY phone (UTF8);
             REQUIRED BINARY truck_id (UTF8);
-            REQUIRED INT32 immatriculation;
+            REQUIRED BINARY immatriculation;
             REQUIRED BINARY start_time (UTF8);
             REQUIRED BINARY end_time (UTF8);
             REQUIRED BINARY rest_time (UTF8);
@@ -83,8 +83,8 @@ fn save_to_parquet(json_file: &str, parquet_file: &str) -> Result<(), Box<dyn st
         let truck_ids: Vec<ByteArray> = messages.iter().map(|m| ByteArray::from(m.truck_id.as_str())).collect();
         write_column!(row_group_writer.next_column()?, truck_ids, parquet::column::writer::ColumnWriter::ByteArrayColumnWriter);
 
-        let immatriculations: Vec<i32> = messages.iter().map(|m| m.immatriculation as i32).collect();
-        write_column!(row_group_writer.next_column()?, immatriculations, parquet::column::writer::ColumnWriter::Int32ColumnWriter);
+        let immatriculations: Vec<ByteArray> = messages.iter().map(|m| ByteArray::from(m.immatriculation.as_str())).collect();
+        write_column!(row_group_writer.next_column()?, immatriculations, parquet::column::writer::ColumnWriter::ByteArrayColumnWriter);
 
         let start_times: Vec<ByteArray> = messages.iter().map(|m| ByteArray::from(m.start_time.as_str())).collect();
         write_column!(row_group_writer.next_column()?, start_times, parquet::column::writer::ColumnWriter::ByteArrayColumnWriter);

@@ -27,8 +27,8 @@ struct Message {
     phone: String,
     #[dummy(expr = "Uuid::new_v4().to_string()")]
     truck_id: String,
-    #[dummy(expr = "Faker.fake::<u16>() % 1000 + 1000")]
-    immatriculation: u16,
+    #[dummy(expr = "Faker.fake::<String>()")]
+    immatriculation: String,
     #[dummy(expr = "Utc::now().to_rfc3339()")]
     start_time: String,
     #[dummy(expr = "Utc::now().to_rfc3339()")]
