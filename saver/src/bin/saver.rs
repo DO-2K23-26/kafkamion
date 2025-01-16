@@ -1,45 +1,23 @@
+
 use aws_sdk_s3::config::Region;
 use parquet::data_type::ByteArray;
 use parquet::file::properties::WriterProperties;
 use parquet::file::writer::{FileWriter, SerializedFileWriter};
 use parquet::schema::parser::parse_message_type;
-use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::sync::Arc;
 use aws_sdk_s3::Client;
 use aws_sdk_s3::primitives::ByteStream;
 use tokio;
+use saver::models::messages::Message;
 
-#[derive(Debug, Serialize, Deserialize)]
-struct Message {
-    driver_id: String,
-    first_name: String,
-    last_name: String,
-    email: String,
-    phone: String,
-    truck_id: String,
-    immatriculation: u16,
-    start_time: String,
-    end_time: String,
-    rest_time: String,
-    latitude_start: f64,
-    longitude_start: f64,
-    timestamp_start: String,
-    latitude_end: f64,
-    longitude_end: f64,
-    timestamp_end: String,
-    latitude_rest: f64,
-    longitude_rest: f64,
-    timestamp_rest: String,
-}
-
-/// Transforme les messages JSON en Parquet et les enregistre localement
+/// Transform the JSON file into a Parquet file
 fn save_to_parquet(json_file: &str, parquet_file: &str) -> Result<(), Box<dyn std::error::Error>> {
-    // Lire les messages depuis le fichier JSON
+    // Read the JSON file
     let json_data = std::fs::read_to_string(json_file)?;
     let messages: Vec<Message> = serde_json::from_str(&json_data)?;
 
-    // Définir le schéma Parquet
+    // Define the Parquet schema
     let message_type = "
         message schema {
             REQUIRED BINARY driver_id (UTF8);
@@ -65,12 +43,12 @@ fn save_to_parquet(json_file: &str, parquet_file: &str) -> Result<(), Box<dyn st
     ";
     let schema = Arc::new(parse_message_type(message_type)?);
 
-    // Créez un fichier Parquet
+    // Create the Parquet file
     let file = File::create(parquet_file)?;
     let props = Arc::new(WriterProperties::builder().build());
     let mut writer = SerializedFileWriter::new(file, schema, props)?;
 
-    // Ajouter les messages dans le fichier Parquet
+    // Add each message to the Parquet file
     {
         let mut row_group_writer = writer.next_row_group()?;
         
@@ -85,7 +63,7 @@ fn save_to_parquet(json_file: &str, parquet_file: &str) -> Result<(), Box<dyn st
             };
         }
 
-        // Écrire chaque colonne dans le fichier Parquet
+        // Write each column
         let driver_ids: Vec<ByteArray> = messages.iter().map(|m| ByteArray::from(m.driver_id.as_str())).collect();
         write_column!(row_group_writer.next_column()?, driver_ids, parquet::column::writer::ColumnWriter::ByteArrayColumnWriter);
 
@@ -188,10 +166,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let json_file = "messages.json"; 
     let parquet_file = "messages.parquet"; 
 
-    // Étape 1 : Convertir JSON en Parquet
+    // Step 1: Convertir le fichier JSON en fichier Parquet
     save_to_parquet(json_file, parquet_file)?;
 
-    // Étape 2 : Uploader le fichier Parquet dans MinIO
+    // Step 2: Envoyer le fichier Parquet sur MinIO
     let bucket = "kafkamion";
     let key = "kafkamion/messages.parquet";
     let endpoint = "http://localhost:9000";

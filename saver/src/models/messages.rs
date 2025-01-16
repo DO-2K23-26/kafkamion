@@ -1,0 +1,70 @@
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Message {
+    pub driver_id: String,
+    pub first_name: String,
+    pub last_name: String,
+    pub email: String,
+    pub phone: String,
+    pub truck_id: String,
+    pub immatriculation: u16,
+    pub start_time: String,
+    pub end_time: String,
+    pub rest_time: String,
+    pub latitude_start: f64,
+    pub longitude_start: f64,
+    pub timestamp_start: String,
+    pub latitude_end: f64,
+    pub longitude_end: f64,
+    pub timestamp_end: String,
+    pub latitude_rest: f64,
+    pub longitude_rest: f64,
+    pub timestamp_rest: String,
+}
+
+impl Message {
+    pub fn new(
+        driver_id: String,
+        first_name: String,
+        last_name: String,
+        email: String,
+        phone: String,
+        truck_id: String,
+        immatriculation: u16,
+        start_time: String,
+        end_time: String,
+        rest_time: String,
+        latitude_start: f64,
+        longitude_start: f64,
+        timestamp_start: String,
+        latitude_end: f64,
+        longitude_end: f64,
+        timestamp_end: String,
+        latitude_rest: f64,
+        longitude_rest: f64,
+        timestamp_rest: String,
+    ) -> Self {
+        Self {
+            driver_id,
+            first_name,
+            last_name,
+            email,
+            phone,
+            truck_id,
+            immatriculation,
+            start_time,
+            end_time,
+            rest_time,
+            latitude_start,
+            longitude_start,
+            timestamp_start,
+            latitude_end,
+            longitude_end,
+            timestamp_end,
+            latitude_rest,
+            longitude_rest,
+            timestamp_rest,
+        }
+    }
+}
