@@ -4,7 +4,7 @@ use clap::{Parser, Subcommand};
 use tracing::info;
 
 use crate::{
-    events::{driver::DriverEvent, time_registration::TimeRegistrationEvent, truck::TruckEvent, EventSource},
+    events::{driver::DriverEvent, time_registration::TimeRegistrationEvent, truck::TruckEvent, EventSource, ReusableEventSource},
     kafka::KafkaClient,
 };
 
@@ -70,17 +70,48 @@ impl Cli {
                 Ok(ExitCode::SUCCESS)
             }
             Command::Position => {
-                todo!("to do");
+                todo!();
             }
             Command::TimeRegistration => {
-                let event_generator = Arc::new(TimeRegistrationEvent::new());
+                //generating drivers : 
+                let event_generator = Arc::new(DriverEvent::new());
+                let mut drivers = Vec::new();
+                for _ in 0..app.count {
+                    let client = client.clone();
+                    let event_generator = event_generator.clone();
+                    let (data, ids) = event_generator.generate_with_id();
+                    info!("generated {:?}", data);
+                    for message in data {
+                        client.publish("entity_topic", &message, "driver").await;
+                    }
+                    for driver in ids {
+                        drivers.push(driver);
+                    }
+                }
+                // same with trucks
+                let event_generator = Arc::new(TruckEvent::new());
+                let mut trucks = Vec::new();
+                for _ in 0..app.count {
+                    let client = client.clone();
+                    let event_generator = event_generator.clone();
+                    let (data, ids) = event_generator.generate_with_id();
+                    info!("generated {:?}", data);
+                    for message in data {
+                        client.publish("entity_topic", &message, "driver").await;
+                    }
+                    for truck in ids {
+                        trucks.push(truck);
+                    }
+                }
+
+                let event_generator = Arc::new(TimeRegistrationEvent::new(drivers, trucks));
                 for _ in 0..app.count {
                     let client = client.clone();
                     let event_generator = event_generator.clone();
                     let data = event_generator.generate();
                     info!("generated {:?}", data);
                     for message in data {
-                        client.publish("entity_topic", &message, "time_registration").await;
+                        client.publish("time_registration_topic", &message, "time_registration").await;
                     }
                 }
                 Ok(ExitCode::SUCCESS)

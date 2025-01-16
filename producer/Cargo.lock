@@ -691,6 +691,7 @@ dependencies = [
  "chrono",
  "clap",
  "fake",
+ "futures",
  "rand",
  "rdkafka",
  "serde",
