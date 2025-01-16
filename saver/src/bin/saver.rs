@@ -10,6 +10,7 @@ use aws_sdk_s3::Client;
 use aws_sdk_s3::primitives::ByteStream;
 use tokio;
 use saver::models::messages::Message;
+use dotenv::dotenv;
 
 /// Transform the JSON file into a Parquet file
 fn save_to_parquet(json_file: &str, parquet_file: &str) -> Result<(), Box<dyn std::error::Error>> {
@@ -134,17 +135,16 @@ async fn upload_to_minio(
     bucket: &str,
     file_path: &str,
     key: &str,
-    endpoint: &str,
-    access_key: &str,
-    secret_key: &str,
+    endpoint: String,
+    access_key: String,
+    secret_key: String,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let config = aws_sdk_s3::Config::builder()
         .endpoint_url(endpoint)
         .credentials_provider(aws_sdk_s3::config::Credentials::new(access_key, secret_key, None, None, "static"))
-        .region(Region::new("francecentral"))
+        .region(Region::new("us-east-1"))
         .build();
     let client = Client::from_conf(config);
-
     let parquet_data = tokio::fs::read(file_path).await?;
     let byte_stream = ByteStream::from(parquet_data);
 
@@ -170,11 +170,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     save_to_parquet(json_file, parquet_file)?;
 
     // Step 2: Envoyer le fichier Parquet sur MinIO
+    dotenv().ok();
     let bucket = "kafkamion";
     let key = "kafkamion/messages.parquet";
-    let endpoint = "http://localhost:9000";
-    let access_key = "xtwFTDGnt7SreXdJMKqy";
-    let secret_key = "B0BsWZ3SkoNPu9h6qJnhdxGd4jUHhyqG2kciypbz";
+    let endpoint = std::env::var("MINIO_ENDPOINT").expect("MINIO_ENDPOINT not set");      
+    let access_key = std::env::var("MINIO_ACCESS_KEY").expect("MINIO_ACCESS_KEY not set");
+    let secret_key = std::env::var("MINIO_SECRET_KEY").expect("MINIO_SECRET_KEY not set");
 
     upload_to_minio(bucket, parquet_file, key, endpoint, access_key, secret_key).await?;
     Ok(())

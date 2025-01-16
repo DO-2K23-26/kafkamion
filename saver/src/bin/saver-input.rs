@@ -4,11 +4,10 @@ use fake::faker::phone_number::en::PhoneNumber;
 use fake::{Dummy, Fake, Faker};
 use serde::Serialize;
 use std::io::Write;
-use std::os::unix::fs::FileExt;
 use std::process::ExitCode;
 use uuid::Uuid;
 use std::fs::File;
-use serde_json::{to_string_pretty};
+use serde_json::to_string_pretty;
 
 pub struct MessageEvent {
     data: Vec<Message>,
