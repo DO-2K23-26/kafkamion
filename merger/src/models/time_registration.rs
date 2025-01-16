@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Debug, Clone)]
 pub struct TimeRegistration {
     pub type_: String,
     pub timestamp: String,
@@ -17,4 +17,6 @@ impl TimeRegistration {
             truck_id: truck_id,
         }
     }
-}
+
+
+}    
