@@ -132,7 +132,7 @@ fn save_to_parquet(json_file: &str, parquet_file: &str) -> Result<(), Box<dyn st
 
 /// Upload the Parquet file to MinIO
 async fn upload_to_minio(
-    bucket: &str,
+    bucket: String,
     file_path: &str,
     key: &str,
     endpoint: String,
@@ -166,13 +166,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let json_file = "messages.json"; 
     let parquet_file = "messages.parquet"; 
 
-    // Step 1: Convertir le fichier JSON en fichier Parquet
+    // Step 1: Convert the JSON file to Parquet
     save_to_parquet(json_file, parquet_file)?;
 
-    // Step 2: Envoyer le fichier Parquet sur MinIO
+    // Step 2: Save the Parquet file to MinIO
     dotenv().ok();
-    let bucket = "kafkamion";
     let key = "kafkamion/messages.parquet";
+    let bucket = std::env::var("MINIO_BUCKET").expect("MINIO_BUCKET not set");
     let endpoint = std::env::var("MINIO_ENDPOINT").expect("MINIO_ENDPOINT not set");      
     let access_key = std::env::var("MINIO_ACCESS_KEY").expect("MINIO_ACCESS_KEY not set");
     let secret_key = std::env::var("MINIO_SECRET_KEY").expect("MINIO_SECRET_KEY not set");
