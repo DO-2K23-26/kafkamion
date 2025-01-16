@@ -4,7 +4,7 @@ use clap::{Parser, Subcommand};
 use tracing::info;
 
 use crate::{
-    events::{driver::DriverEvent, time_registration::TimeRegistrationEvent, truck::TruckEvent, EventSource, ReusableEventSource},
+    events::{driver::DriverEvent, position::{self, PositionEvent}, time_registration::{self, TimeRegistrationEvent}, truck::TruckEvent, EventSource, ReusableEventSource},
     kafka::KafkaClient,
 };
 
@@ -70,7 +70,62 @@ impl Cli {
                 Ok(ExitCode::SUCCESS)
             }
             Command::Position => {
-                todo!();
+                let event_generator = Arc::new(DriverEvent::new());
+                let mut drivers = Vec::new();
+                for _ in 0..app.count {
+                    let client = client.clone();
+                    let event_generator = event_generator.clone();
+                    let (data, ids) = event_generator.generate_with_id();
+                    info!("generated {:?}", data);
+                    for message in data {
+                        client.publish("entity_topic", &message, "driver").await;
+                    }
+                    for driver in ids {
+                        drivers.push(driver);
+                    }
+                }
+                // same with trucks
+                let event_generator = Arc::new(TruckEvent::new());
+                let mut trucks = Vec::new();
+                for _ in 0..app.count {
+                    let client = client.clone();
+                    let event_generator = event_generator.clone();
+                    let (data, ids) = event_generator.generate_with_id();
+                    info!("generated {:?}", data);
+                    for message in data {
+                        client.publish("entity_topic", &message, "driver").await;
+                    }
+                    for truck in ids {
+                        trucks.push(truck);
+                    }
+                }
+
+                let event_generator = Arc::new(TimeRegistrationEvent::new(drivers, trucks));
+                let mut time_registrations = Vec::new();
+                for _ in 0..app.count {
+                    let client = client.clone();
+                    let event_generator = event_generator.clone();
+                    let (data, time_registration) = event_generator.generate_with_id();
+                    info!("generated {:?}", data);
+                    for message in data {
+                        client.publish("time_registration_topic", &message, "time_registration").await;
+                    }
+                    time_registrations.push(time_registration);
+                }
+
+                let event_generator = Arc::new(PositionEvent::new(time_registrations));
+                for _ in 0..app.count {
+                    let client = client.clone();
+                    let event_generator = event_generator.clone();
+                    let data = event_generator.generate();
+                    info!("generated {:?}", data);
+                    for message in data {
+                        client.publish("position_topic", &message, "position").await;
+                    }
+                }
+
+
+                Ok(ExitCode::SUCCESS)
             }
             Command::TimeRegistration => {
                 //generating drivers : 

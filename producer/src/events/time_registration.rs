@@ -3,7 +3,7 @@ use fake::{Dummy, Fake, Faker};
 use rand::Rng;
 use serde::Serialize;
 
-use super::{driver::Driver, truck::Truck, EventSource};
+use super::{driver::Driver, truck::Truck, EventSource, ReusableEventSource};
 
 pub struct TimeRegistrationEvent {
     truck_pool: Vec<Truck>,
@@ -12,10 +12,10 @@ pub struct TimeRegistrationEvent {
 
 #[derive(Debug, Clone, Serialize)]
 pub struct TimeRegistration {
-    r#type: String,
-    truck_id: String,
-    timestamp: String,
-    driver_id: String,
+    pub r#type: String,
+    pub truck_id: String,
+    pub timestamp: String,
+    pub driver_id: String,
 }
 
 enum TimeRegistrationType {
@@ -131,6 +131,13 @@ impl TimeRegistrationEvent {
 
 impl EventSource for TimeRegistrationEvent {
     fn generate(&self) -> Vec<String> {
+        let (data, _) = self.generate_with_id();
+        data
+    }
+}
+
+impl ReusableEventSource<TimeRegistration> for TimeRegistrationEvent {
+    fn generate_with_id(&self) -> (Vec<String>, Vec<TimeRegistration>) {
         let time_registration_types = [TimeRegistrationType::StartDay, TimeRegistrationType::StartBreak, TimeRegistrationType::EndBreak, TimeRegistrationType::EndDay];
 
         let mut rng = rand::thread_rng();
@@ -139,14 +146,16 @@ impl EventSource for TimeRegistrationEvent {
         //then the truck
         let random_truck = self.truck_pool.get(rng.gen_range(0..self.truck_pool.len()));
         let mut data = Vec::new();
+        let mut events = Vec::new();
         for time_registration_type in time_registration_types {
             let event = TimeRegistrationBuilder::new(time_registration_type)
                 .with_driver(random_driver.unwrap().clone())
                 .with_truck(random_truck.unwrap().clone())
                 .build();
             
+            events.push(event.clone());
             data.push(serde_json::to_string(&event).unwrap());
         }
-        data
+        (data, events)
     }
 }

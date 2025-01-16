@@ -31,4 +31,13 @@ Run the following command :
 cargo run -- time-registration
 ```
 
+## 4. Position
 
+The position registrations events **calls alll the events** so if you need an end to end
+data provider for your merger please use this command. To do so, call :
+
+```rust
+cargo run -- position
+```
+
+Enjoy :)
