@@ -102,7 +102,7 @@ impl Cli {
                     event_generator,
                     client.clone(),
                     app.count,
-                    "entity_topic",
+                    "time_registration_topic",
                     "time_registration",
                 )
                 .await;
