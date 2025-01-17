@@ -1,14 +1,12 @@
-use fake::{Dummy, Faker, Fake};
 use fake::faker::automotive::fr_fr::LicencePlate;
+use fake::{Dummy, Fake, Faker};
 
 use serde::Serialize;
 use uuid::Uuid;
 
-use super::{EventSource, ReusableEventSource};
+use super::EventSource;
 
-pub struct TruckEvent {
-}
-
+pub struct TruckEvent {}
 
 #[derive(Debug, Clone, Dummy, Serialize)]
 pub struct Truck {
@@ -17,25 +15,17 @@ pub struct Truck {
     #[dummy(expr = "Uuid::new_v4().to_string()")]
     pub truck_id: String,
     #[dummy(faker = "LicencePlate()")]
-    pub immatriculation: String
+    pub immatriculation: String,
 }
 
 impl TruckEvent {
     pub fn new() -> Self {
-        Self{
-        }
+        Self {}
     }
 }
 
-impl EventSource for TruckEvent {
-    fn generate(&self) -> Vec<String> {
-        let (data,_) = self.generate_with_id();
-        data
-    }
-}
-
-impl ReusableEventSource<Truck> for TruckEvent {
-    fn generate_with_id(&self) -> (Vec<String>, Vec<Truck>) {
+impl EventSource<Truck> for TruckEvent {
+    fn generate(&self) -> (Vec<String>, Vec<Truck>) {
         let data: Truck = Faker.fake();
         (vec![serde_json::to_string(&data).unwrap()], vec![data])
     }

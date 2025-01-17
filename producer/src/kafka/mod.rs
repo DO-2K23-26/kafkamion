@@ -3,7 +3,7 @@ use rdkafka::{
     util::Timeout,
     ClientConfig,
 };
-use tracing::{debug, info};
+use tracing::info;
 
 pub struct KafkaClient {
     producer: FutureProducer,
@@ -16,7 +16,7 @@ impl KafkaClient {
                 .set("bootstrap.servers", broker)
                 .set("message.timeout.ms", "5000")
                 .create()
-                .unwrap()
+                .unwrap(),
         }
     }
 

@@ -5,7 +5,7 @@ use fake::faker::internet::en::FreeEmail;
 use serde::Serialize;
 use uuid::Uuid;
 
-use super::{EventSource, ReusableEventSource};
+use super::EventSource;
 
 pub struct DriverEvent {
 }
@@ -33,17 +33,9 @@ impl DriverEvent {
     }
 }
 
-impl EventSource for DriverEvent {
-    fn generate(&self) -> Vec<String> {
-        let (data,_) = self.generate_with_id();
-        data
-    }
 
-
-}
-
-impl ReusableEventSource<Driver> for DriverEvent {
-    fn generate_with_id(&self) -> (Vec<String>, Vec<Driver>) {
+impl EventSource<Driver> for DriverEvent {
+    fn generate(&self) -> (Vec<String>, Vec<Driver>) {
         let data: Driver = Faker.fake();
         (vec![serde_json::to_string(&data).unwrap()], vec![data])
     }
