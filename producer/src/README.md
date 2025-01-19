@@ -4,6 +4,17 @@ This CLI provides a set of utility to feed data to the `merger` service.
 
 Thanks to this cli you can simulate the following events : 
 
+## 0. Run the producer
+
+To run the producer, you need to run the following command :
+
+```rust
+cargo run -- -d 30 run
+```
+
+The producer will run for 30 seconds. You can change the duration with the `-d` option.
+
+
 ## 1. Drivers
 
 To simulate driver creations run the following command : 
