@@ -11,8 +11,6 @@ use crate::{
     kafka::KafkaClient,
 };
 
-pub mod scenarios;
-
 #[derive(Debug, Parser)]
 #[clap(name = "producer", version)]
 pub struct App {
@@ -26,7 +24,7 @@ pub struct App {
     pub duration: u64,
 
     #[warn(unused_parens)]
-    #[clap(short, long, default_value_t = ("localhost:9092".to_string()))]
+    #[clap(short, long, default_value_t = ("localhost:29092".to_string()))]
     pub endpoint: String,
 }
 
@@ -48,7 +46,7 @@ impl Cli {
 
     pub async fn execute(&self, app: App) -> Result<ExitCode, ExitCode> {
         info!("Execution...");
-        let client = Arc::new(KafkaClient::new(&app.endpoint));
+        let client = Arc::new(KafkaClient::new(&app.endpoint).await.map_err(|_| ExitCode::FAILURE)?);
 
         info!("Connected to consumer at {}", app.endpoint);
         match app.action {
@@ -154,9 +152,13 @@ impl Cli {
             }
             Command::Run => {
                 let duration = Duration::from_secs(app.duration);
-                //let task = task::spawn(async {
-                //
-                //})
+                let (timeout_tx, mut timeout_rx) = mpsc::channel();
+                let task = tokio::spawn(async {
+                    if let Err(e) = timeout_rx.recv().await {
+                        error!("timeout: {}", e);
+                    }
+
+                });
 
                 Ok(ExitCode::SUCCESS)
             }
