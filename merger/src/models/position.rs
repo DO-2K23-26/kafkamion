@@ -20,3 +20,20 @@ impl Position {
         }
     }
 }
+
+#[derive(Debug, Clone)]
+pub struct FullPosition {
+    pub start: Option<Position>,
+    pub rest: Option<Position>,
+    pub end: Option<Position>,
+}
+
+impl FullPosition {
+    pub fn new() -> FullPosition {
+        FullPosition {
+            start: None,
+            rest: None,
+            end: None,
+        }
+    }
+}
