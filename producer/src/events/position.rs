@@ -5,7 +5,7 @@ use fake::{
 use rand::Rng;
 use serde::Serialize;
 
-use super::{time_registration::TimeRegistration, EventSource};
+use super::{time_registration::{TimeRegistration, TimeRegistrationType}, EventSource};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Position {
@@ -52,6 +52,10 @@ impl EventSource<Position> for PositionEvent {
 
         let mut data = Vec::new();
         let mut positions = Vec::new();
+
+        let random_time_registrations = random_time_registrations.iter().filter(|e| {
+            e.r#type != TimeRegistrationType::EndBreak.to_string()
+        });
 
         for random_time_registration in random_time_registrations {
             let time_registration = random_time_registration.clone();
