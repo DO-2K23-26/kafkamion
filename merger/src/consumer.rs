@@ -50,8 +50,8 @@ enum Event {
 
 /// Determines the event type and returns the corresponding structure.
 fn detect_event_type_topic(payload: &Value) -> Event {
-    match payload.get("type_").and_then(Value::as_str) {
-        Some("driver") => Event::Driver(Driver {
+    match payload.get("type").and_then(Value::as_str) {
+        Some("driver_topic") => Event::Driver(Driver {
             type_: "driver".to_string(),
             driver_id: payload.get("driver_id").and_then(Value::as_str).map(String::from).expect("REASON"),
             first_name: payload.get("first_name").and_then(Value::as_str).map(String::from).expect("REASON"),
@@ -59,22 +59,28 @@ fn detect_event_type_topic(payload: &Value) -> Event {
             email: payload.get("email").and_then(Value::as_str).map(String::from).expect("REASON"),
             phone: payload.get("phone").and_then(Value::as_str).map(String::from).expect("REASON"),
         }),
-        Some("truck") => Event::Truck(Truck {
+        Some("truck_topic") => Event::Truck(Truck {
             type_: "truck".to_string(),
             truck_id: payload.get("truck_id").and_then(Value::as_str).map(String::from).expect("REASON"),
             immatriculation: payload.get("immatriculation").and_then(Value::as_str).map(String::from).expect("REASON"),
         }),
-        Some("start") | Some("end") | Some("rest") => Event::TimeRegistration(TimeRegistration {
-            type_: payload.get("type_").and_then(Value::as_str).unwrap_or_default().to_string(),
+        Some("time_registration_topic") => Event::TimeRegistration(TimeRegistration {
+            type_: payload.get("type").and_then(Value::as_str).unwrap_or_default().to_string(),
             timestamp: payload.get("timestamp").and_then(Value::as_str).map(String::from).expect("REASON"),
             driver_id: payload.get("driver_id").and_then(Value::as_str).map(String::from).expect("REASON"),
             truck_id: payload.get("truck_id").and_then(Value::as_str).map(String::from).expect("REASON"),
         }),
-        Some("position") => Event::Position(Position {
+        Some("position_topic") => Event::Position(Position {
             type_: "position".to_string(),
             truck_id: payload.get("truck_id").and_then(Value::as_str).map(String::from).expect("REASON"),
-            latitude: payload.get("latitude").and_then(Value::as_f64).expect("REASON"),
-            longitude: payload.get("longitude").and_then(Value::as_f64).expect("REASON"),
+            latitude: payload.get("latitude").and_then(Value::as_str)
+            .expect("Pas de champ 'latitude'")
+            .parse::<f64>()
+            .expect("Impossible de parser la latitude"),
+            longitude: payload.get("longitude").and_then(Value::as_str)
+            .expect("Pas de champ 'longitude'")
+            .parse::<f64>()
+            .expect("Impossible de parser la longitude"),
             timestamp: payload.get("timestamp").and_then(Value::as_str).map(String::from).expect("REASON"),
         }),
         _ => Event::Unknown,
@@ -291,7 +297,22 @@ pub async fn consumer(client_config: ClientConfig) {
                             if let Some(payload) = message.payload() {
                                 let payload_str = String::from_utf8_lossy(payload);
 
-                                if let Ok(parsed_message) = serde_json::from_str::<Value>(&payload_str) {
+                                if let Ok(mut parsed_message) = serde_json::from_str::<Value>(&payload_str) {
+                                    if let Some(map) = parsed_message.as_object_mut() {
+                                        if topic == "entity_topic" {
+                                            if map.get("driver_id").is_some() {
+                                                map.insert("type".to_string(), Value::String("driver_topic".to_string()));
+                                            } else if map.get("truck_id").is_some() {
+                                                map.insert("type".to_string(), Value::String("truck_topic".to_string()));
+                                            } else {
+                                                error!("Message missing driver_id or truck_id: {:?}", parsed_message);
+                                                continue;
+                                            }
+                                        } else {
+                                            map.insert("type".to_string(), Value::String(topic.clone()));
+                                        }
+                                    }
+                                    // println!("Received message: {:?}", parsed_message);
                                     let event_type = detect_event_type_topic(&parsed_message);
                                     let key = get_key_from_message(&parsed_message);
 
@@ -631,7 +652,7 @@ pub async fn consumer(client_config: ClientConfig) {
                                                     // info!("Updated Rest time store");
                                                 }
                                             }
-                                            _ => {}
+                                            _ => { error!("The time registration has any type : {:?}", time_reg) }
                                         }
                                         ,
                                         Event::Position(ref position) => match position.type_.as_str() {

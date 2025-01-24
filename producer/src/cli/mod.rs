@@ -151,15 +151,6 @@ impl Cli {
                 Ok(ExitCode::SUCCESS)
             }
             Command::Run => {
-                let duration = Duration::from_secs(app.duration);
-                let (timeout_tx, mut timeout_rx) = mpsc::channel();
-                let task = tokio::spawn(async {
-                    if let Err(e) = timeout_rx.recv().await {
-                        error!("timeout: {}", e);
-                    }
-
-                });
-
                 Ok(ExitCode::SUCCESS)
             }
         }
